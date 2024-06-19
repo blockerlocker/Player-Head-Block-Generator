@@ -1,0 +1,32 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Player Head Block Generator (1.21)</title>
+    <style>
+        body { font-family: Arial, sans-serif; }
+        #output img { margin: 10px; border: 1px solid #ccc; }
+    </style>
+</head>
+<body>
+    <h1>Player Head Block Generator</h1>
+	<div id="blockTemplate">
+        <img src="block_template.png" alt="Block Template">
+    </div>
+    <label for="upload">Upload a 64x64 PNG image of your block that follows the above mapping:</label>
+    <input type="file" id="upload" accept="image/png">
+    <br>
+    <label for="apiKey">Enter your MineSkin API key:</label>
+    <input type="text" id="apiKeyInput">
+    <button id="convert">Convert</button>
+	<div>
+		<p>When command loads, click to copy.</p>
+	</div>
+	<div></div>
+    <div id="output"></div>
+    <div id="textureValues"></div>
+
+    <script src="script.js"></script>
+</body>
+</html>
