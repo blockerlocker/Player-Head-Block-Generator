@@ -26,17 +26,35 @@ async function processAndUpload(img, file) {
     }
 
     const textureValues = [];
+    let failedUploads = 0;
+    let apiKeyValid = true;
+
     for (let i = 0; i < 4; i++) {
-        try {
-            const textureValue = await uploadToMineSkin(outputCanvases[i].canvas.toDataURL('image/png'), file);
-            textureValues.push(textureValue);
-        } catch (error) {
-            console.error('Failed to upload to MineSkin API:', error);
+        let success = false;
+        for (let attempt = 0; attempt < 5; attempt++) {
+            try {
+                const textureValue = await uploadToMineSkin(outputCanvases[i].canvas.toDataURL('image/png'), file);
+                textureValues.push(textureValue);
+                success = true;
+                break;
+            } catch (error) {
+                console.error(`Attempt ${attempt + 1} failed to upload to MineSkin API:`, error);
+                if (error.message.includes('401')) {
+                    apiKeyValid = false;
+                    break;
+                }
+                if (error.message.includes('Too many requests')) {
+                    await new Promise(resolve => setTimeout(resolve, 6000)); // Wait for 6 seconds
+                }
+            }
+        }
+        if (!success) {
             textureValues.push('backupTextureValue');
+            failedUploads++;
         }
     }
 
-    displayTextureValues(textureValues);
+    displayTextureValues(textureValues, failedUploads, apiKeyValid);
 }
 
 async function uploadToMineSkin(canvasDataURL, file) {
@@ -138,13 +156,35 @@ function processImage(img) {
 
     document.getElementById('textureValues').textContent = 'Loading...';
     processAndUpload(img);
+
+    // Generate download links for the generated images
+    const downloadLinksContainer = document.getElementById('downloadLinks');
+    downloadLinksContainer.innerHTML = ''; // Clear previous links
+
+    outputCanvases.forEach((outputCanvas, index) => {
+        const link = document.createElement('a');
+        link.href = outputCanvas.canvas.toDataURL('image/png');
+        link.download = `generated_image_${index + 1}.png`;
+
+        const img = document.createElement('img');
+        img.src = outputCanvas.canvas.toDataURL('image/png');
+        img.alt = `Generated Image ${index + 1}`;
+        img.title = `Click to download Generated Image ${index + 1}`;
+
+        link.appendChild(img);
+        downloadLinksContainer.appendChild(link);
+    });
 }
 
-function displayTextureValues(textureValues) {
+function displayTextureValues(textureValues, failedUploads, apiKeyValid) {
     const textureValuesDiv = document.getElementById('textureValues');
 
-    if (textureValues.includes('backupTextureValue')) {
-        textureValuesDiv.textContent = 'Failed to upload to MineSkin API. Please try again.';
+    if (failedUploads > 0) {
+        let errorMessage = `Failed to upload ${failedUploads} file(s) to MineSkin API.`;
+        if (!apiKeyValid) {
+            errorMessage += ' Please check your API key.';
+        }
+        textureValuesDiv.textContent = errorMessage;
         return;
     }
 
